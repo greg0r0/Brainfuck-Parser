@@ -29,6 +29,8 @@ private:
     Token _Token;
     std::vector<Command> _Commands;
 public:
+    Loop() {}
+    Loop(Token _t, std::vector<Command> _c): _Token(_t), _Commands(_c) {}
     std::vector<Command> getCommands() { return this->_Commands;}
 };
 
