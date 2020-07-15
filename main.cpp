@@ -1,42 +1,99 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <algorithm>
+#include <stack>
+
 #include "types.hpp"
 
 /*
   main functionality
 */
-std::vector<Token>   Lexer(std::string);
-std::vector<Command> Parser(std::vector<Token>);
-void                 BuildXML(std::vector<Command>);
+std::vector<Token> Lexer(std::string);
+Commands Parser(std::vector<Token>);
+void BuildXML(std::vector<Command>);
 
 /*
     util functions
 */
-std::string ReadFile(char*);
+std::string ReadFile(char *);
+bool CheckBracketsCount(std::string);
+std::vector<Token>::iterator FindBracketPair(std::vector<Token> source, std::vector<Token>::iterator position);
+void PrintTree(Commands cmd, int rec_depth);
 
 
+int main(int argc, char *argv[])
+{
 
-int main(int argc, char* argv[]) {
-    
-    if ( argc != 2 ){
+    if (argc != 2)
+    {
         std::cout << "Usage:" << argv[0] << " <BF source code file>" << std::endl;
         exit(1);
     }
     std::string source_code = ReadFile(argv[1]);
-    auto k = Lexer(source_code);
+    auto l = Parser(Lexer(source_code));
 
+    PrintTree(l, 0);
+
+    l.Clear();
     return 0;
 }
 
+//Lexer for brainfuck is simple -- just split all chars to token vector
+std::vector<Token> Lexer(std::string source)
+{
+    std::vector<Token> result;
 
-std::string ReadFile(char* source_file){
+    for (auto c : source)
+    {
+        try
+        {
+            result.push_back((Token)c);
+        }
+        catch (...)
+        {
+            //Brainfuck ignoring non-syntax characters - try-catch for enum type cast errors
+        }
+    }
+
+    return result;
+}
+
+Commands Parser(std::vector<Token> program)
+{
+    Commands program_tree;
+
+    for (std::vector<Token>::iterator cmd = program.begin(); cmd != program.end(); cmd++)
+    {
+
+        if (*cmd == Token::t_LOOP_OPEN ) {
+            //1. find second bracket
+            std::vector<Token>::iterator second_bracket = FindBracketPair(program, cmd);
+            std::vector<Token> loop_program(cmd+1, second_bracket);
+            cmd = second_bracket; // just move iterator to end of brackets
+            //2.create loop
+            Commands d = Parser(loop_program);
+            //3. add loop to commands
+            program_tree.addCommand(new Loop(d));
+        } else {
+            program_tree.addCommand(new Command(*cmd));
+        }
+    }
+
+    return program_tree;
+}
+
+std::string ReadFile(char *source_file)
+{
     std::ifstream bf_source(source_file);
     std::stringstream buffer;
 
-    if (bf_source.is_open()) {
+    if (bf_source.is_open())
+    {
         buffer << bf_source.rdbuf();
-    } else {
+    }
+    else
+    {
         std::cerr << "[!] Error: Source Code File can't be open." << std::endl;
         exit(1);
     }
@@ -44,17 +101,41 @@ std::string ReadFile(char* source_file){
     return buffer.str();
 }
 
-//Lexer for brainfuck is simple -- just split all chars to token vector
-std::vector<Token> Lexer(std::string source){
-    std::vector<Token> result;
+bool CheckBracketsCount(std::string source)
+{
+    if (std::count(source.begin(), source.end(), '[') != std::count(source.begin(), source.end(), ']'))
+        return false;
+    return true;
+}
 
-    for (auto c: source){
-        try{
-            result.push_back((Token)c);
-        } catch (...) {
-            //Brainfuck ignoring non-syntax characters - try-catch for enum type cast errors
+//as position use bracket that you want to find pair for <3
+std::vector<Token>::iterator FindBracketPair(std::vector<Token> source, std::vector<Token>::iterator position)
+{
+    std::stack< std::vector<Token>::iterator > brackets;
+
+    for (auto i = position; i != source.end(); i++)
+    {
+        if (*i == Token::t_LOOP_OPEN)
+        {
+            brackets.push(i);
+        }
+        if (*i == Token::t_LOOP_CLOSE)
+        {
+            brackets.pop();       //just pop element because we know position of left bracket
+
+            if (brackets.empty()) //if stack empty - return position of right bracket
+                return i;
         }
     }
+    return source.end(); //wtf
+}
 
-    return result;
+void PrintTree(Commands cmd, int rec_depth){
+    for (auto c: cmd.getCommands()){
+        if (c->getToken() != Token::t_LOOP){
+            std::cout<< std::string(rec_depth, '+') << c->getTokenString()<<std::endl;
+        } else {
+            PrintTree(dynamic_cast<Loop*>(c)->getCommands(), rec_depth+1);
+        }
+    }
 }
