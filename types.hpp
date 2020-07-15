@@ -3,11 +3,6 @@
 #include <vector>
 #include <string>
 
-//main classes
-class Command;
-class Loop;
-class Commands;
-
 //Elements of BF syntax, for lexer parser
 enum class Token
 {
