@@ -8,7 +8,7 @@
 */
 std::vector<Token> Lexer(std::string);
 Commands Parser(std::vector<Token>);
-void BuildXML(std::vector<Command>);
+void BuildAST(Commands);
 
 /*
     util functions

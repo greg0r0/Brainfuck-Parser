@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "pugixml.hpp"
 
 //Elements of BF syntax, for lexer parser
 enum class Token
@@ -29,6 +30,11 @@ public:
 
     Token getToken() { return this->_Token; }
     std::string virtual getType() { return "Command"; }
+
+    void virtual appendXML(pugi::xml_node root){
+        root.append_child(this->getTokenString().c_str());
+    }
+
     std::string getTokenString()
     {
         switch ((this->_Token))
@@ -96,6 +102,12 @@ public:
 
     Commands getCommands() { return this->_Commands; }
     std::string getType() { return "Loop"; }
+
+    void virtual appendXML(pugi::xml_node root){
+        pugi::xml_node loop = root.append_child("t_LOOP");
+        for (auto c: this->_Commands.getCommands())
+            c->appendXML(loop);
+    }
 };
 
 #endif

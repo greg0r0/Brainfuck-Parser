@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     std::string source_code = ReadFile(argv[1]);
     auto l = Parser(Lexer(source_code));
 
-    PrintTree(l, 0);
+    BuildAST(l);
 
     l.Clear();
     return 0;

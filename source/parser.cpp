@@ -50,6 +50,25 @@ Commands Parser(std::vector<Token> program)
     return program_tree;
 }
 
+void BuildAST(Commands program){
+    //create empty doc
+    pugi::xml_document doc;
+
+    //create declaration node
+    pugi::xml_node declaration = doc.append_child(pugi::node_declaration);
+    declaration.append_attribute("version") = "1.0";
+
+    //create main node
+    pugi::xml_node root = doc.append_child("program");
+    
+    // just fill main node with commands
+    for (auto c: program.getCommands()){
+        c->appendXML(root);
+    }
+    
+    doc.print(std::cout);
+}
+
 std::string ReadFile(char *source_file)
 {
     std::ifstream bf_source(source_file);
